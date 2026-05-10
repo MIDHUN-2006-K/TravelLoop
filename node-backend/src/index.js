@@ -8,6 +8,11 @@ import authRoutes from './routes/auth.js';
 import tripRoutes from './routes/trips.js';
 import cityRoutes from './routes/cities.js';
 import activityRoutes from './routes/activities.js';
+import expenseRoutes from './routes/expenses.js';
+import packingRoutes from './routes/packing.js';
+import notesRoutes from './routes/notes.js';
+import sharingRoutes from './routes/sharing.js';
+import savedRoutes from './routes/saved.js';
 
 dotenv.config();
 
@@ -20,19 +25,29 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Routes
+// Core routes
 app.use('/auth', authRoutes);
 app.use('/trips', tripRoutes);
 app.use('/cities', cityRoutes);
 app.use('/activities', activityRoutes);
+
+// Feature sub-routes (mergeParams: true in routers lets them access :tripId)
+app.use('/trips/:tripId/expenses', expenseRoutes);
+app.use('/trips/:tripId/packing', packingRoutes);
+app.use('/trips/:tripId/notes', notesRoutes);
+
+// Sharing & saved destinations
+app.use('/sharing', sharingRoutes);
+app.use('/shared', sharingRoutes);
+app.use('/saved-destinations', savedRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -81,4 +96,3 @@ app.listen(PORT, () => {
 });
 
 export default app;
-

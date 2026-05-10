@@ -11,49 +11,66 @@ datasource db {
 }
 
 model User {
-  user_id       String   @id @default(uuid())
-  name          String?
-  email         String   @unique
-  password_hash String
-  profile_photo String?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  user_id        String    @id @default(uuid())
+  name           String?
+  email          String    @unique
+  password_hash  String
+  profile_photo  String?
+  avatar_url     String?
+  language       String?   @default("en")
+  preferences    Json?
+  otp_code       String?
+  otp_expires_at DateTime?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
 
-  trips Trip[]
+  trips             Trip[]
+  saved_destinations SavedDestination[]
 
   @@map("users")
 }
 
 model Trip {
-  trip_id     String   @id @default(uuid())
-  user_id     String
-  trip_name   String
-  start_date  DateTime @db.Date
-  end_date    DateTime @db.Date
-  description String?
-  cover_photo String?
-  is_public   Boolean  @default(false)
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  trip_id         String   @id @default(uuid())
+  user_id         String
+  trip_name       String
+  start_date      DateTime @db.Date
+  end_date        DateTime @db.Date
+  description     String?
+  cover_photo     String?
+  cover_image_url String?
+  is_public       Boolean  @default(false)
+  status          String   @default("PLANNED")
+  tags            String[] @default([])
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
-  user     User          @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  stops    TripStop[]
-  expenses Expense[]
+  user         User          @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  stops        TripStop[]
+  expenses     Expense[]
+  packing_items PackingItem[]
+  notes        Note[]
+  shared_trips SharedTrip[]
 
   @@map("trips")
 }
 
 model City {
-  city_id         String  @id @default(uuid())
-  name            String
-  country         String
-  cost_index      Float?  @default(1.0)
-  popularity_score Int?    @default(0)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  city_id          String   @id @default(uuid())
+  name             String
+  country          String
+  latitude         Float?
+  longitude        Float?
+  image_url        String?
+  description      String?
+  cost_index       Float?   @default(1.0)
+  popularity_score Int?     @default(0)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
 
-  stops    TripStop[]
-  activities Activity[]
+  stops              TripStop[]
+  activities         Activity[]
+  saved_destinations SavedDestination[]
 
   @@index([name])
   @@index([country])
@@ -66,14 +83,17 @@ model TripStop {
   trip_id        String
   city_id        String?
   stopping_place String?
+  latitude       Float?
+  longitude      Float?
+  notes          String?
   start_date     DateTime @db.Date
   end_date       DateTime @db.Date
   order_index    Int      @default(0)
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 
-  trip       Trip        @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade)
-  city       City?       @relation(fields: [city_id], references: [city_id])
+  trip       Trip          @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade)
+  city       City?         @relation(fields: [city_id], references: [city_id])
   activities TripActivity[]
 
   @@index([trip_id])
@@ -87,12 +107,14 @@ model Activity {
   name        String
   category    String
   avg_cost    Float?
+  rating      Float?
   duration    Int?     // in minutes
   description String?
+  image_url   String?
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  city         City          @relation(fields: [city_id], references: [city_id])
+  city            City           @relation(fields: [city_id], references: [city_id])
   trip_activities TripActivity[]
 
   @@index([city_id])
@@ -119,13 +141,15 @@ model TripActivity {
 }
 
 model Expense {
-  expense_id    String   @id @default(uuid())
-  trip_id      String
-  category     String
+  expense_id     String   @id @default(uuid())
+  trip_id        String
+  category       String
   estimated_cost Float
-  description  String?
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  actual_cost    Float?
+  description    String?
+  expense_date   DateTime? @db.Date
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
 
   trip Trip @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade)
 
@@ -134,3 +158,60 @@ model Expense {
   @@map("expenses")
 }
 
+model PackingItem {
+  packing_item_id String   @id @default(uuid())
+  trip_id         String
+  name            String
+  category        String
+  is_packed       Boolean  @default(false)
+  quantity        Int      @default(1)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  trip Trip @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade)
+
+  @@index([trip_id])
+  @@map("packing_items")
+}
+
+model Note {
+  note_id    String    @id @default(uuid())
+  trip_id    String
+  title      String
+  content    String
+  stop_id    String?
+  day_date   DateTime? @db.Date
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  trip Trip @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade)
+
+  @@index([trip_id])
+  @@map("notes")
+}
+
+model SharedTrip {
+  shared_trip_id String   @id @default(uuid())
+  trip_id        String
+  share_token    String   @unique @default(uuid())
+  created_at     DateTime @default(now())
+
+  trip Trip @relation(fields: [trip_id], references: [trip_id], onDelete: Cascade)
+
+  @@index([trip_id])
+  @@map("shared_trips")
+}
+
+model SavedDestination {
+  saved_id   String   @id @default(uuid())
+  user_id    String
+  city_id    String
+  notes      String?
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  city City @relation(fields: [city_id], references: [city_id])
+
+  @@unique([user_id, city_id])
+  @@map("saved_destinations")
+}
