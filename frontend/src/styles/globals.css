@@ -2,55 +2,246 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* ========================================
+   TRAVELOOP — Premium Design System
+   ======================================== */
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
-  background-color: #f9fafb;
-  font-family: system-ui, -apple-system, sans-serif;
-}
-
-.container {
-  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
-}
-
-/* Utility classes */
-.text-truncate {
-  @apply overflow-hidden text-ellipsis whitespace-nowrap;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
   }
-  to {
-    opacity: 1;
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface-50 text-surface-900 font-sans;
+    min-height: 100vh;
+  }
+
+  /* Premium scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-300 rounded-full;
+    transition: background 0.2s;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-surface-400;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-primary-200 text-primary-900;
+  }
+
+  /* Focus ring */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-400 ring-offset-2 ring-offset-white;
   }
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+@layer components {
+  /* Container */
+  .container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+  }
+  .glass-dark {
+    @apply bg-surface-900/70 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-white rounded-2xl border border-surface-200/60 shadow-premium transition-all duration-300;
+  }
+  .card:hover {
+    @apply shadow-premium-lg border-surface-200;
+  }
+  .card-interactive {
+    @apply card cursor-pointer;
+  }
+  .card-interactive:hover {
+    @apply shadow-premium-lg -translate-y-0.5;
+  }
+
+  /* Gradient text */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-secondary-500;
+  }
+  .text-gradient-ocean {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold tracking-wide;
+  }
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-700;
+  }
+  .badge-secondary {
+    @apply badge bg-secondary-100 text-secondary-700;
+  }
+  .badge-success {
+    @apply badge bg-green-100 text-green-700;
+  }
+  .badge-warning {
+    @apply badge bg-amber-100 text-amber-700;
+  }
+  .badge-danger {
+    @apply badge bg-red-100 text-red-700;
+  }
+
+  /* Section heading */
+  .section-title {
+    @apply text-2xl font-display font-bold text-surface-900 tracking-tight;
+  }
+  .section-subtitle {
+    @apply text-surface-500 mt-1;
+  }
+
+  /* Shimmer skeleton */
+  .skeleton {
+    @apply relative overflow-hidden rounded-xl bg-surface-100;
+  }
+  .skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.6) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+
+  /* Divider */
+  .divider {
+    @apply border-t border-surface-200/80;
+  }
+
+  /* Status dot */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+  .status-dot-active {
+    @apply status-dot bg-accent-500;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+  }
+  .status-dot-warning {
+    @apply status-dot bg-warning;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  }
+
+  /* Tab styles */
+  .tab {
+    @apply relative px-4 py-3 text-sm font-medium text-surface-500 transition-colors duration-200 cursor-pointer;
+  }
+  .tab:hover {
+    @apply text-surface-700;
+  }
+  .tab-active {
+    @apply tab text-primary-600;
+  }
+  .tab-active::after {
+    content: "";
+    @apply absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 rounded-full;
+  }
+
+  /* Overlay */
+  .overlay {
+    @apply fixed inset-0 bg-surface-950/60 backdrop-blur-sm z-40 transition-opacity duration-300;
+  }
+
+  /* Stagger animation children */
+  .stagger-children > * {
+    @apply animate-fade-in-up;
+  }
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 75ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 150ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 225ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 300ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 375ms; }
+  .stagger-children > *:nth-child(7) { animation-delay: 450ms; }
+  .stagger-children > *:nth-child(8) { animation-delay: 525ms; }
+}
+
+@layer utilities {
+  /* Text truncation */
+  .text-truncate {
+    @apply overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  /* Gradient borders */
+  .border-gradient {
+    border-image: linear-gradient(to right, #3366ff, #ff7a11) 1;
+  }
+
+  /* Hide scrollbar but allow scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Aspect ratios */
+  .aspect-card {
+    aspect-ratio: 16 / 10;
+  }
+  .aspect-cover {
+    aspect-ratio: 21 / 9;
+  }
+
+  /* Transition groups */
+  .transition-base {
+    @apply transition-all duration-200 ease-out;
+  }
+  .transition-medium {
+    @apply transition-all duration-300 ease-out;
+  }
+  .transition-slow {
+    @apply transition-all duration-500 ease-out;
   }
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease-in;
+/* Leaflet map overrides */
+.leaflet-container {
+  @apply rounded-2xl;
+  font-family: var(--font-inter), system-ui, sans-serif !important;
+}
+.leaflet-popup-content-wrapper {
+  @apply rounded-xl shadow-premium-lg !important;
+}
+.leaflet-popup-content {
+  @apply font-sans !important;
+  margin: 12px 16px !important;
 }
 
-.slide-up {
-  animation: slideUp 0.3s ease-out;
+/* Recharts overrides */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #e2e8f0;
+}
+.recharts-tooltip-wrapper {
+  @apply !outline-none;
 }

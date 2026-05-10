@@ -1,7 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { User } from "@/types";
+import { User, Trip } from "@/types";
 
+// ============================================
+// AUTH STORE
+// ============================================
 interface AuthStore {
   user: User | null;
   token: string | null;
@@ -30,7 +33,7 @@ export const useAuthStore = create<AuthStore>()(
       logout: () => set({ user: null, token: null }),
     }),
     {
-      name: "auth-store",
+      name: "traveloop-auth",
       partialize: (state) => ({
         user: state.user,
         token: state.token,
@@ -39,17 +42,27 @@ export const useAuthStore = create<AuthStore>()(
   )
 );
 
-// Trip Store
+// ============================================
+// TRIP STORE
+// ============================================
 interface TripStore {
-  trips: any[];
-  selectedTrip: any | null;
+  trips: Trip[];
+  selectedTrip: Trip | null;
   isLoading: boolean;
   error: string | null;
+  searchQuery: string;
+  filterStatus: string;
+  sortBy: string;
+  viewMode: "grid" | "list";
 
-  setTrips: (trips: any[]) => void;
-  setSelectedTrip: (trip: any | null) => void;
+  setTrips: (trips: Trip[]) => void;
+  setSelectedTrip: (trip: Trip | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
+  setSearchQuery: (query: string) => void;
+  setFilterStatus: (status: string) => void;
+  setSortBy: (sort: string) => void;
+  setViewMode: (mode: "grid" | "list") => void;
 }
 
 export const useTripStore = create<TripStore>((set) => ({
@@ -57,9 +70,34 @@ export const useTripStore = create<TripStore>((set) => ({
   selectedTrip: null,
   isLoading: false,
   error: null,
+  searchQuery: "",
+  filterStatus: "",
+  sortBy: "",
+  viewMode: "grid",
 
   setTrips: (trips) => set({ trips }),
   setSelectedTrip: (selectedTrip) => set({ selectedTrip }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
+  setSearchQuery: (searchQuery) => set({ searchQuery }),
+  setFilterStatus: (filterStatus) => set({ filterStatus }),
+  setSortBy: (sortBy) => set({ sortBy }),
+  setViewMode: (viewMode) => set({ viewMode }),
+}));
+
+// ============================================
+// UI STORE
+// ============================================
+interface UIStore {
+  activeTab: string;
+  sidebarOpen: boolean;
+  setActiveTab: (tab: string) => void;
+  setSidebarOpen: (open: boolean) => void;
+}
+
+export const useUIStore = create<UIStore>((set) => ({
+  activeTab: "overview",
+  sidebarOpen: false,
+  setActiveTab: (activeTab) => set({ activeTab }),
+  setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
 }));

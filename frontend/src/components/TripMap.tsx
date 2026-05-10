@@ -1,159 +1,118 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import { helperService } from "@/services/api";
 import { MapPoint } from "@/types";
+import { MapSkeleton } from "@/components/Skeletons";
 
-// Dynamically import Leaflet to avoid window reference during SSR
-let L: any = null;
+// Fix Leaflet icon in Next.js
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
-interface TripMapProps {
-  points: MapPoint[];
-  loading?: boolean;
-  height?: string;
+function createNumberedIcon(num: number) {
+  return L.divIcon({
+    html: `<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3366ff,#1a45f5);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;border:2px solid white;box-shadow:0 2px 8px rgba(51,102,255,0.4)">${num}</div>`,
+    className: "",
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -36],
+  });
 }
 
-const TripMap: React.FC<TripMapProps> = ({
-  points,
-  loading = false,
-  height = "400px",
-}) => {
-  const mapRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
+function FitBounds({ points }: { points: MapPoint[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      map.setView([points[0].lat, points[0].lng], 10);
+    } else {
+      const bounds = L.latLngBounds(points.map((p) => [p.lat, p.lng]));
+      map.fitBounds(bounds, { padding: [60, 60] });
+    }
+  }, [points, map]);
+  return null;
+}
+
+interface Props { tripId: string; }
+
+export default function TripMap({ tripId }: Props) {
+  const [points, setPoints] = useState<MapPoint[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (loading || points.length === 0 || !containerRef.current) return;
-
-    // Lazy import Leaflet only on client side
-    if (!L) {
-      L = require("leaflet");
-      require("leaflet/dist/leaflet.css");
-    }
-
-    // Initialize map
-    if (!mapRef.current) {
-      mapRef.current = L.map(containerRef.current).setView([0, 0], 2);
-
-      // Add tile layer
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-        maxZoom: 19,
-      }).addTo(mapRef.current);
-    }
-
-    const map = mapRef.current;
-    const bounds = L.latLngBounds([]);
-
-    // Clear existing markers and polyline
-    map.eachLayer((layer: any) => {
-      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-        map.removeLayer(layer);
-      }
+    helperService.getTripMapPoints(tripId).then((data) => {
+      setPoints(data);
+      setLoading(false);
     });
+  }, [tripId]);
 
-    // Add markers for each point
-    const coordinates: [number, number][] = [];
-    points.forEach((point) => {
-      const marker = L.circleMarker([point.lat, point.lng], {
-        radius: 8,
-        fillColor: "#1e40af",
-        color: "#fff",
-        weight: 2,
-        opacity: 1,
-        fillOpacity: 0.8,
-      }).addTo(map);
-
-      // Add popup with city name and order
-      const popup = L.popup().setContent(
-        `<div class="text-center"><strong>${point.order}. ${point.name}</strong></div>`
-      );
-      marker.bindPopup(popup);
-
-      bounds.extend([point.lat, point.lng]);
-      coordinates.push([point.lat, point.lng]);
-    });
-
-    // Draw polyline connecting all points
-    if (coordinates.length > 1) {
-      L.polyline(coordinates, {
-        color: "#7c3aed",
-        weight: 3,
-        opacity: 0.7,
-        dashArray: "5, 5",
-      }).addTo(map);
-    }
-
-    // Fit bounds to show all markers
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
-  }, [points, loading]);
-
-  if (loading) {
-    return (
-      <div
-        className="bg-gray-200 rounded-lg border border-gray-300 animate-pulse"
-        style={{ height }}
-        aria-label="Map loading"
-      />
-    );
-  }
+  if (loading) return <MapSkeleton />;
 
   if (points.length === 0) {
     return (
-      <div
-        className="bg-gray-100 rounded-lg border border-gray-300 flex items-center justify-center text-gray-500"
-        style={{ height }}
-        aria-label="No map data available"
-      >
-        No stops with location data
+      <div className="card h-96 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-4xl mb-3">🗺️</p>
+          <p className="font-semibold text-surface-700">No locations to show</p>
+          <p className="text-sm text-surface-400 mt-1">Add cities to your itinerary to see them on the map</p>
+        </div>
       </div>
     );
   }
 
+  const center: [number, number] = [points[0].lat, points[0].lng];
+  const routeCoords: [number, number][] = points.map((p) => [p.lat, p.lng]);
+
   return (
-    <div className="w-full">
-      {/* Mobile collapsible header */}
-      <div className="lg:hidden mb-4">
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="w-full px-4 py-3 bg-primary text-white rounded-lg flex justify-between items-center hover:bg-blue-700 transition"
-          aria-expanded={isExpanded}
-          aria-label="Toggle map view"
-        >
-          <span className="font-medium">View Route Map</span>
-          <span>{isExpanded ? "−" : "+"}</span>
-        </button>
+    <div className="space-y-4">
+      <div className="rounded-2xl overflow-hidden shadow-premium-lg" style={{ height: "480px" }}>
+        <MapContainer center={center} zoom={5} style={{ height: "100%", width: "100%" }} zoomControl={true}>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          <FitBounds points={points} />
+
+          {/* Route Line */}
+          {routeCoords.length > 1 && (
+            <Polyline
+              positions={routeCoords}
+              pathOptions={{ color: "#3366ff", weight: 3, opacity: 0.7, dashArray: "8, 6" }}
+            />
+          )}
+
+          {/* Markers */}
+          {points.map((point) => (
+            <Marker key={point.city_id || point.name} position={[point.lat, point.lng]} icon={createNumberedIcon(point.order)}>
+              <Popup>
+                <div className="p-1">
+                  <p className="font-bold text-surface-900 text-sm">Stop {point.order}</p>
+                  <p className="text-surface-600 text-sm">{point.name}</p>
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
       </div>
 
-      {/* Map container */}
-      <div
-        ref={containerRef}
-        className={`${
-          isExpanded ? "block" : "hidden lg:block"
-        } w-full rounded-lg border border-gray-300 overflow-hidden`}
-        style={{ height: isExpanded ? "500px" : height }}
-        aria-label="Trip route map"
-        role="region"
-      />
-
       {/* Legend */}
-      {isExpanded ||
-        (window.innerWidth >= 1024 && (
-          <div className="mt-4 text-xs text-gray-600">
-            <p className="mb-2">
-              <strong>Map Legend:</strong>
-            </p>
-            <ul className="space-y-1">
-              <li>
-                🔵 Blue circles = Stop locations (in order 1→{points.length})
-              </li>
-              <li>━━ Purple dashed line = Trip route</li>
-            </ul>
+      <div className="flex flex-wrap gap-3">
+        {points.map((point) => (
+          <div key={point.name} className="flex items-center gap-2 px-3 py-1.5 bg-white rounded-xl border border-surface-200 shadow-premium">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+              {point.order}
+            </div>
+            <span className="text-sm font-medium text-surface-700">{point.name}</span>
           </div>
         ))}
+      </div>
     </div>
   );
-};
-
-export default TripMap;
+}
